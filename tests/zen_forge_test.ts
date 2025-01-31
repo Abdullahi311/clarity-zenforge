@@ -70,3 +70,35 @@ Clarinet.test({
         assertEquals(statsResult['rewards-earned'], types.uint(10));
     }
 });
+
+Clarinet.test({
+    name: "Test achievement system",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const deployer = accounts.get('deployer')!;
+        const user1 = accounts.get('wallet_1')!;
+
+        // Create achievement
+        let createAchievement = chain.mineBlock([
+            Tx.contractCall('zen-forge', 'create-achievement', [
+                types.ascii("Zen Master"),
+                types.ascii("Complete 100 meditation sessions"),
+                types.uint(100),
+                types.ascii("sessions"),
+                types.uint(500)
+            ], deployer.address)
+        ]);
+
+        createAchievement.receipts[0].result.expectOk().expectUint(0);
+
+        // Check achievement details
+        let achievementDetails = chain.mineBlock([
+            Tx.contractCall('zen-forge', 'get-achievement-details', [
+                types.uint(0)
+            ], user1.address)
+        ]);
+
+        let details = achievementDetails.receipts[0].result.expectOk().expectSome();
+        assertEquals(details['title'], types.ascii("Zen Master"));
+        assertEquals(details['requirement'], types.uint(100));
+    }
+});
